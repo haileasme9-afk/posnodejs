@@ -44,13 +44,16 @@ export type ProductRow = {
     id: number;
     name: string;
     barcode: string | null;
+    category_id: number | null;
     category_name: string | null;
+    supplier_id: number | null;
     selling_price: number;
     cost_price: number;
     stock_quantity: number;
     min_stock: number;
     unit: string;
     is_active: boolean;
+    image: string | null;
 };
 
 export type OrderRow = {
@@ -195,7 +198,8 @@ export const db = {
             params.push(200);
             const rows = await sql(
                 `SELECT p.id, p.name, p.barcode, p.selling_price, p.cost_price,
-                        p.stock_quantity, p.min_stock, p.unit, p.is_active,
+                        p.stock_quantity, p.min_stock, p.unit, p.is_active, p.image,
+                        p.category_id, p.supplier_id,
                         c.name AS category_name
                  FROM products p
                  LEFT JOIN categories c ON p.category_id = c.id
@@ -209,13 +213,16 @@ export const db = {
                 id: toNumber(row.id),
                 name: str(row.name),
                 barcode: strOrNull(row.barcode),
+                category_id: row.category_id == null ? null : toNumber(row.category_id),
                 category_name: strOrNull(row.category_name),
+                supplier_id: row.supplier_id == null ? null : toNumber(row.supplier_id),
                 selling_price: toNumber(row.selling_price),
                 cost_price: toNumber(row.cost_price),
                 stock_quantity: toNumber(row.stock_quantity),
                 min_stock: toNumber(row.min_stock),
                 unit: str(row.unit, "pcs"),
                 is_active: Boolean(row.is_active),
+                image: strOrNull(row.image),
             }));
         });
     },

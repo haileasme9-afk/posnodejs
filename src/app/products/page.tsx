@@ -1,20 +1,10 @@
 import type { Metadata } from "next";
 import { requirePage } from "@/lib/page-guard";
 import { db, currencySymbol } from "@/lib/data";
-import { compactNumber, money } from "@/lib/format";
-import {
-    Badge,
-    Button,
-    Card,
-    DatabaseNotice,
-    EmptyState,
-    Input,
-    PageHeader,
-    Table,
-    Td,
-    Th,
-} from "@/components/ui";
+import { compactNumber } from "@/lib/format";
+import { Card, DatabaseNotice, Input, PageHeader, Button } from "@/components/ui";
 import { SearchIcon } from "@/components/icons";
+import { ProductEditor } from "@/components/product-editor";
 
 export const metadata: Metadata = { title: "Products" };
 export const dynamic = "force-dynamic";
@@ -74,62 +64,11 @@ export default async function ProductsPage({
                     </form>
                 </div>
 
-                {products.ok && products.data.length > 0 ? (
-                    <Table>
-                        <thead>
-                            <tr>
-                                <Th>Product</Th>
-                                <Th>Category</Th>
-                                <Th align="right">Cost</Th>
-                                <Th align="right">Price</Th>
-                                <Th align="right">Stock</Th>
-                                <Th>Status</Th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {products.data.map((product) => (
-                                <tr key={product.id} className="hover:bg-surface-alt">
-                                    <Td>
-                                        <span className="block font-medium">{product.name}</span>
-                                        <span className="block text-xs text-muted">
-                                            {product.barcode ?? "No barcode"}
-                                        </span>
-                                    </Td>
-                                    <Td className="text-muted">
-                                        {product.category_name ?? "Uncategorised"}
-                                    </Td>
-                                    <Td align="right" className="text-muted">
-                                        {money(product.cost_price, symbol)}
-                                    </Td>
-                                    <Td align="right" className="font-semibold">
-                                        {money(product.selling_price, symbol)}
-                                    </Td>
-                                    <Td align="right">
-                                        {compactNumber(product.stock_quantity)} {product.unit}
-                                    </Td>
-                                    <Td>
-                                        {!product.is_active ? (
-                                            <Badge tone="neutral">Inactive</Badge>
-                                        ) : product.stock_quantity <= product.min_stock ? (
-                                            <Badge tone="danger">Low stock</Badge>
-                                        ) : (
-                                            <Badge tone="success">In stock</Badge>
-                                        )}
-                                    </Td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </Table>
-                ) : (
-                    <EmptyState
-                        title={search ? `No products match “${search}”` : "No products yet"}
-                        description={
-                            search
-                                ? "Try a different name, barcode or item code."
-                                : "Add products to the database to see them listed here."
-                        }
-                    />
-                )}
+                <ProductEditor
+                    initialProducts={products.ok ? products.data : []}
+                    symbol={symbol}
+                    search={search}
+                />
             </Card>
         </>
     );

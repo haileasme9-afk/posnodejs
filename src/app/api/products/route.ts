@@ -48,7 +48,7 @@ export async function POST(request: Request) {
         const {
             barcode, item_code, name, description, category_id,
             supplier_id, cost_price, selling_price, stock_quantity,
-            min_stock, unit, is_active,
+            min_stock, unit, image, is_active,
         } = body;
         if (!name || selling_price == null) {
             return NextResponse.json({ success: false, error: 'Name and selling price are required' }, { status: 400 });
@@ -58,11 +58,11 @@ export async function POST(request: Request) {
             INSERT INTO products (
                 barcode, item_code, name, description, category_id,
                 supplier_id, cost_price, selling_price, stock_quantity,
-                min_stock, unit, is_active, created_at
+                min_stock, unit, image, is_active, created_at
             ) VALUES (
                 ${finalBarcode}, ${item_code ?? null}, ${name}, ${description ?? null}, ${category_id ?? null},
                 ${supplier_id ?? null}, ${cost_price ?? 0}, ${selling_price}, ${stock_quantity ?? 0},
-                ${min_stock ?? 5}, ${unit ?? 'pcs'}, ${is_active ?? true}, NOW()
+                ${min_stock ?? 5}, ${unit ?? 'pcs'}, ${image || null}, ${is_active ?? true}, NOW()
             ) RETURNING *`;
         return NextResponse.json({ success: true, data: result[0] }, { status: 201 });
     } catch (e) {
@@ -86,7 +86,7 @@ export async function PUT(request: Request) {
                 supplier_id = ${body.supplier_id ?? null}, cost_price = ${body.cost_price ?? 0},
                 selling_price = ${body.selling_price}, stock_quantity = ${body.stock_quantity ?? 0},
                 min_stock = ${body.min_stock ?? 5}, unit = ${body.unit ?? 'pcs'},
-                is_active = ${body.is_active ?? true}, updated_at = NOW()
+                image = ${body.image || null}, is_active = ${body.is_active ?? true}, updated_at = NOW()
             WHERE id = ${id}
             RETURNING *`;
         if (result.length === 0) return NextResponse.json({ success: false, error: 'Product not found' }, { status: 404 });

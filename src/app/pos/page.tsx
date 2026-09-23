@@ -30,6 +30,7 @@ export default async function PosPage() {
                     selling_price: toNumber(product.selling_price),
                     stock_quantity: toNumber(product.stock_quantity),
                     unit: product.unit,
+                    image: product.image,
                 }))}
                 initialError={products.ok ? undefined : products.error}
                 symbol={symbol}

@@ -55,3 +55,34 @@ export function titleCase(value: unknown): string {
     const text = String(value ?? "");
     return text.charAt(0).toUpperCase() + text.slice(1);
 }
+
+/** Reads an image file and downscales it to a base64 JPEG data URL (client-side only). */
+export function fileToDataUrl(file: File, maxSize = 500): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("Could not read image"));
+        reader.onload = () => {
+            const src = reader.result as string;
+            const image = new Image();
+            image.onerror = () => resolve(src);
+            image.onload = () => {
+                try {
+                    const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+                    const width = Math.max(1, Math.round(image.width * scale));
+                    const height = Math.max(1, Math.round(image.height * scale));
+                    const canvas = document.createElement("canvas");
+                    canvas.width = width;
+                    canvas.height = height;
+                    const context = canvas.getContext("2d");
+                    if (!context) return resolve(src);
+                    context.drawImage(image, 0, 0, width, height);
+                    resolve(canvas.toDataURL("image/jpeg", 0.8));
+                } catch {
+                    resolve(src);
+                }
+            };
+            image.src = src;
+        };
+        reader.readAsDataURL(file);
+    });
+}

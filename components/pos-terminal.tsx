@@ -10,6 +10,7 @@ import {
 } from "@/components/ui";
 import {
     AlertIcon,
+    BoxIcon,
     CardIcon,
     CartIcon,
     CashIcon,
@@ -27,7 +28,14 @@ import type { ProductRow } from "@/lib/data";
 
 type Product = Pick<
     ProductRow,
-    "id" | "name" | "barcode" | "category_name" | "selling_price" | "stock_quantity" | "unit"
+    | "id"
+    | "name"
+    | "barcode"
+    | "category_name"
+    | "selling_price"
+    | "stock_quantity"
+    | "unit"
+    | "image"
 >;
 
 export type PosTerminalProps = {
@@ -312,31 +320,49 @@ export function PosTerminal({
                                     type="button"
                                     disabled={soldOut}
                                     onClick={() => addProduct(product)}
-                                    className={`flex h-28 flex-col justify-between rounded-card border p-3 text-left transition-colors ${
+                                    className={`flex h-32 flex-col overflow-hidden rounded-card border text-left transition-colors ${
                                         soldOut
                                             ? "cursor-not-allowed border-border bg-surface-alt opacity-60"
                                             : "border-border bg-surface shadow-card hover:border-primary hover:bg-primary-soft/40"
                                     }`}
                                 >
-                                    <div className="flex items-start justify-between gap-2">
+                                    <div className="relative w-full shrink-0 bg-surface-alt">
+                                        {product.image ? (
+                                            <div className="aspect-[5/2] w-full overflow-hidden">
+                                                <img
+                                                    src={product.image}
+                                                    alt=""
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="grid aspect-[5/2] w-full place-items-center text-faint">
+                                                <BoxIcon width={18} height={18} />
+                                            </div>
+                                        )}
+                                        {soldOut && (
+                                            <Badge tone="danger" className="absolute top-2 right-2">
+                                                Out
+                                            </Badge>
+                                        )}
+                                    </div>
+                                    <div className="flex h-full flex-col justify-between p-2.5">
                                         <span className="line-clamp-2 text-sm font-medium text-foreground">
                                             {product.name}
                                         </span>
-                                        {soldOut ? (
-                                            <Badge tone="danger">Out</Badge>
-                                        ) : (
-                                            <span className="shrink-0 text-[11px] text-faint">
-                                                {product.stock_quantity} {product.unit}
+                                        <div className="flex items-end justify-between">
+                                            <span className="text-base font-semibold text-foreground">
+                                                {money(product.selling_price, symbol)}
                                             </span>
-                                        )}
-                                    </div>
-                                    <div className="flex items-end justify-between">
-                                        <span className="text-base font-semibold text-foreground">
-                                            {money(product.selling_price, symbol)}
-                                        </span>
-                                        <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary-soft text-primary">
-                                            <PlusIcon width={14} height={14} />
-                                        </span>
+                                            <span className="flex items-center gap-2">
+                                                <span className="text-[11px] text-faint">
+                                                    {product.stock_quantity} {product.unit}
+                                                </span>
+                                                <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary-soft text-primary">
+                                                    <PlusIcon width={14} height={14} />
+                                                </span>
+                                            </span>
+                                        </div>
                                     </div>
                                 </button>
                             );
@@ -390,6 +416,17 @@ export function PosTerminal({
                             <ul className="divide-y divide-border">
                                 {cart.map((line) => (
                                     <li key={line.product.id} className="flex items-center gap-3 py-3">
+                                        {line.product.image ? (
+                                            <img
+                                                src={line.product.image}
+                                                alt=""
+                                                className="h-10 w-10 shrink-0 rounded-md object-cover"
+                                            />
+                                        ) : (
+                                            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-surface-alt text-faint">
+                                                <BoxIcon width={18} height={18} />
+                                            </span>
+                                        )}
                                         <div className="min-w-0 flex-1">
                                             <p className="truncate text-sm font-medium text-foreground">
                                                 {line.product.name}

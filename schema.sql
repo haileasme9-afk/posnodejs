@@ -66,12 +66,15 @@ CREATE TABLE IF NOT EXISTS products (
     min_stock INT DEFAULT 5,
     unit VARCHAR(20) DEFAULT 'pcs',
     is_active BOOLEAN DEFAULT TRUE,
-    image VARCHAR(255),
+    image TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
     FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL
 );
+
+-- Widen image column for base64 data URLs (no-op if already TEXT)
+ALTER TABLE products ALTER COLUMN image TYPE TEXT;
 
 -- Stock movements table
 CREATE TABLE IF NOT EXISTS stock_movements (
