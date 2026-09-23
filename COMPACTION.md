@@ -77,13 +77,13 @@ Key numeric generation: invoice `CA-XXXXXXXX`, FS `00000000`, order number `ORDy
 
 ## Progress
 
-- [x] Git init/push (`main`, commits `eeb522d`, `90534bd`, `affd594`)
+- [x] Git init/push (`main`, commits `eeb522d`, `90534bd`, `affd594`, `4d2fcb4`)
 - [x] Schema extended + migrated to Neon (verified via `/api/...`)
 - [x] All business APIs (auth, dashboard, categories, suppliers, customers, users, products, orders, receiving, transfers, stock, settings)
-- [x] Production deploy on Vercel (`/api/products` verified)
-- [ ] Tailwind v4 `globals.css` (`@import "tailwindcss";`), app shell (`(app)` route group + sidebar), `ui.tsx` + client `apiFetch`
-- [ ] Pages: login, dashboard, POS, products, categories, suppliers, customers, orders, receiving, transfers, held-orders, stock, reports, users, settings
-- [ ] Add `SESSION_SECRET` to Vercel env, rebuild, redeploy
+- [x] Tailwind v4 `globals.css` (`@import "tailwindcss";`), app shell (`(app)` route group + sidebar), `ui.tsx` + client `apiFetch`
+- [x] Pages: login, dashboard, POS, products, categories, suppliers, customers, orders, receiving, transfers, held-orders, stock, reports, users, settings
+- [x] Production deploy on Vercel — full flow verified live: login → dashboard → POS checkout (server-priced totals) → refund (stock restored)
+- [x] `SESSION_SECRET` added to Vercel env, deployed to `https://pos-nextjs-three.vercel.app`
 
 ## Out of scope (per original decision)
 
@@ -96,5 +96,5 @@ Key numeric generation: invoice `CA-XXXXXXXX`, FS `00000000`, order number `ORDy
 
 - Port 3000 is occupied on this machine → run local server on port `3010`.
 - Deploy via CLI: `npx vercel deploy --prod --token <VERCEL_TOKEN>` (git auto-link to Vercel failed).
-- `.env.local` holds `DATABASE_URL`, `NEXT_PUBLIC_SITE_NAME`, `CURRENCY`; `SESSION_SECRET` pending for prod.
+- `.env.local` holds `DATABASE_URL`, `NEXT_PUBLIC_SITE_NAME`, `CURRENCY`; `SESSION_SECRET` set in Vercel prod env (added via `vercel env add`).
 - DB migrate: `node scripts/migrate.mjs` with `DATABASE_URL` set.
