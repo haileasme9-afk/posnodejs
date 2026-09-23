@@ -299,7 +299,7 @@ export function PosTerminal({
                         {Array.from({ length: 8 }).map((_, index) => (
                             <div
                                 key={index}
-                                className="h-28 animate-pulse rounded-card border border-border bg-surface"
+                                className="h-36 animate-pulse rounded-card border border-border bg-surface"
                             />
                         ))}
                     </div>
@@ -320,13 +320,13 @@ export function PosTerminal({
                                     type="button"
                                     disabled={soldOut}
                                     onClick={() => addProduct(product)}
-                                    className={`flex h-32 flex-col overflow-hidden rounded-card border text-left transition-colors ${
+                                    className={`flex flex-col overflow-hidden rounded-card border text-left transition-colors ${
                                         soldOut
                                             ? "cursor-not-allowed border-border bg-surface-alt opacity-60"
                                             : "border-border bg-surface shadow-card hover:border-primary hover:bg-primary-soft/40"
                                     }`}
                                 >
-                                    <div className="relative w-full shrink-0 bg-surface-alt">
+                                    <div className="relative w-full shrink-0 overflow-hidden bg-surface-alt">
                                         {product.image ? (
                                             <div className="aspect-[5/2] w-full overflow-hidden">
                                                 <img
@@ -346,19 +346,19 @@ export function PosTerminal({
                                             </Badge>
                                         )}
                                     </div>
-                                    <div className="flex h-full flex-col justify-between p-2.5">
+                                    <div className="flex flex-1 flex-col justify-between gap-1 p-2.5">
                                         <span className="line-clamp-2 text-sm font-medium text-foreground">
                                             {product.name}
                                         </span>
-                                        <div className="flex items-end justify-between">
-                                            <span className="text-base font-semibold text-foreground">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="min-w-0 truncate text-base font-semibold text-foreground">
                                                 {money(product.selling_price, symbol)}
                                             </span>
-                                            <span className="flex items-center gap-2">
+                                            <span className="flex shrink-0 items-center gap-2">
                                                 <span className="text-[11px] text-faint">
                                                     {product.stock_quantity} {product.unit}
                                                 </span>
-                                                <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary-soft text-primary">
+                                                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary">
                                                     <PlusIcon width={14} height={14} />
                                                 </span>
                                             </span>
