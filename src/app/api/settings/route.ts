@@ -1,4 +1,5 @@
 import { sql } from '@/lib/neon';
+import { requirePermission } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +47,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
+        const { error } = await requirePermission('settings');
+        if (error) return error;
         const body = await request.json();
         const { key, value } = body;
 

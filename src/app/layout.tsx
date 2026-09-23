@@ -1,11 +1,10 @@
 import './globals.css';
-import { Header } from '@/components/header';
-import { Sidebar } from '@/components/sidebar';
-import { Footer } from '@/components/footer';
-import { MobileMenu } from '@/components/mobile-menu';
 
 export const metadata = {
-  title: 'POS System',
+  title: {
+    default: 'POS System',
+    template: '%s | POS System',
+  },
   description: 'Point of Sale System',
 };
 
@@ -16,16 +15,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-background text-foreground">
-        <Header />
-        <div className="flex flex-col min-h-screen">
-          <Sidebar />
-          <main className="flex-1 p-6 overflow-auto">
-            {children}
-          </main>
-        </div>
-        <Footer />
-        <MobileMenu />
+      <body className="min-h-screen bg-zinc-50 font-sans text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-50">
+        {children}
       </body>
     </html>
   );

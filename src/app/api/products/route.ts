@@ -1,160 +1,113 @@
+import { NextResponse } from 'next/server';
 import { sql } from '@/lib/neon';
+import { requirePermission } from '@/lib/auth';
+import { generateBarcode } from '@/lib/helpers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+    const { error } = await requirePermission('products');
+    if (error) return error;
     const { searchParams } = new URL(request.url);
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit') as string) : 50;
     const category_id = searchParams.get('category_id');
     const active_only = searchParams.get('active_only');
+    const q = searchParams.get('q');
 
-    try {
-        let query = `SELECT p.*, c.name as category_name 
-                     FROM products p 
-                     LEFT JOIN categories c ON p.category_id = c.id`;
-        const params = [];
-        const conditions = [];
+    let query = `SELECT p.*, c.name as category_name, s.name as supplier_name
+                 FROM products p
+                 LEFT JOIN categories c ON p.category_id = c.id
+                 LEFT JOIN suppliers s ON p.supplier_id = s.id`;
+    const params: unknown[] = [];
+    const conditions: string[] = [];
 
-        if (category_id) {
-            conditions.push(`p.category_id = $${params.length + 1}`);
-            params.push(category_id);
-        }
-
-        if (active_only) {
-            conditions.push(`p.is_active = TRUE`);
-        }
-
-        if (conditions.length > 0) {
-            query += ' WHERE ' + conditions.join(' AND ');
-        }
-
-        query += ` LIMIT $${params.length + 1}`;
-        params.push(limit);
-
-        const products = await sql(query, ...params);
-
-        return new Response(JSON.stringify({ success: true, data: products }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-        });
-    } catch (error) {
-        console.error('Error fetching products:', error);
-        return new Response(JSON.stringify({ success: false, error: 'Failed to fetch products' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
-        });
+    if (category_id) {
+        params.push(category_id);
+        conditions.push(`p.category_id = $${params.length}`);
     }
+    if (active_only) {
+        conditions.push('p.is_active = TRUE');
+    }
+    if (q) {
+        params.push(`%${q}%`);
+        conditions.push(`(p.name ILIKE $${params.length} OR p.barcode ILIKE $${params.length} OR p.item_code ILIKE $${params.length})`);
+    }
+    if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
+    params.push(limit);
+    query += ` ORDER BY p.name ASC LIMIT $${params.length}`;
+
+    const rows = await sql(query, ...params);
+    return NextResponse.json({ success: true, data: rows });
 }
 
 export async function POST(request: Request) {
+    const { error } = await requirePermission('products');
+    if (error) return error;
     try {
         const body = await request.json();
         const {
             barcode, item_code, name, description, category_id,
             supplier_id, cost_price, selling_price, stock_quantity,
-            min_stock, unit, is_active
+            min_stock, unit, is_active,
         } = body;
-
+        if (!name || selling_price == null) {
+            return NextResponse.json({ success: false, error: 'Name and selling price are required' }, { status: 400 });
+        }
+        const finalBarcode = barcode || (await generateBarcode());
         const result = await sql`
             INSERT INTO products (
                 barcode, item_code, name, description, category_id,
                 supplier_id, cost_price, selling_price, stock_quantity,
                 min_stock, unit, is_active, created_at
             ) VALUES (
-                ${barcode}, ${item_code}, ${name}, ${description}, ${category_id},
-                ${supplier_id}, ${cost_price}, ${selling_price}, ${stock_quantity},
-                ${min_stock}, ${unit}, ${is_active ?? true}, NOW()
-            )
-            RETURNING *;
-        `;
-
-        return new Response(JSON.stringify({ success: true, data: result }), {
-            status: 201,
-            headers: { 'Content-Type': 'application/json' },
-        });
-    } catch (error) {
-        console.error('Error creating product:', error);
-        return new Response(JSON.stringify({ success: false, error: 'Failed to create product' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
-        });
+                ${finalBarcode}, ${item_code ?? null}, ${name}, ${description ?? null}, ${category_id ?? null},
+                ${supplier_id ?? null}, ${cost_price ?? 0}, ${selling_price}, ${stock_quantity ?? 0},
+                ${min_stock ?? 5}, ${unit ?? 'pcs'}, ${is_active ?? true}, NOW()
+            ) RETURNING *`;
+        return NextResponse.json({ success: true, data: result[0] }, { status: 201 });
+    } catch (e) {
+        console.error(e);
+        return NextResponse.json({ success: false, error: 'Failed to create product' }, { status: 500 });
     }
 }
 
 export async function PUT(request: Request) {
+    const { error } = await requirePermission('products');
+    if (error) return error;
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
-        
-        if (!id) {
-            return new Response(JSON.stringify({ success: false, error: 'Product ID required' }), {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' },
-            });
-        }
-
+        if (!id) return NextResponse.json({ success: false, error: 'Product ID required' }, { status: 400 });
         const body = await request.json();
-        const {
-            barcode, item_code, name, description, category_id,
-            supplier_id, cost_price, selling_price, stock_quantity,
-            min_stock, unit, is_active
-        } = body;
-
         const result = await sql`
-            UPDATE products 
-            SET barcode = ${barcode}, item_code = ${item_code}, name = ${name},
-                description = ${description}, category_id = ${category_id},
-                supplier_id = ${supplier_id}, cost_price = ${cost_price},
-                selling_price = ${selling_price}, stock_quantity = ${stock_quantity},
-                min_stock = ${min_stock}, unit = ${unit}, is_active = ${is_active},
-                updated_at = NOW()
+            UPDATE products
+            SET barcode = ${body.barcode ?? null}, item_code = ${body.item_code ?? null}, name = ${body.name},
+                description = ${body.description ?? null}, category_id = ${body.category_id ?? null},
+                supplier_id = ${body.supplier_id ?? null}, cost_price = ${body.cost_price ?? 0},
+                selling_price = ${body.selling_price}, stock_quantity = ${body.stock_quantity ?? 0},
+                min_stock = ${body.min_stock ?? 5}, unit = ${body.unit ?? 'pcs'},
+                is_active = ${body.is_active ?? true}, updated_at = NOW()
             WHERE id = ${id}
-            RETURNING *;
-        `;
-
-        if (result.length === 0) {
-            return new Response(JSON.stringify({ success: false, error: 'Product not found' }), {
-                status: 404,
-                headers: { 'Content-Type': 'application/json' },
-            });
-        }
-
-        return new Response(JSON.stringify({ success: true, data: result[0] }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-        });
-    } catch (error) {
-        console.error('Error updating product:', error);
-        return new Response(JSON.stringify({ success: false, error: 'Failed to update product' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
-        });
+            RETURNING *`;
+        if (result.length === 0) return NextResponse.json({ success: false, error: 'Product not found' }, { status: 404 });
+        return NextResponse.json({ success: true, data: result[0] });
+    } catch (e) {
+        console.error(e);
+        return NextResponse.json({ success: false, error: 'Failed to update product' }, { status: 500 });
     }
 }
 
 export async function DELETE(request: Request) {
+    const { error } = await requirePermission('products');
+    if (error) return error;
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
-
-        if (!id) {
-            return new Response(JSON.stringify({ success: false, error: 'Product ID required' }), {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' },
-            });
-        }
-
+        if (!id) return NextResponse.json({ success: false, error: 'Product ID required' }, { status: 400 });
         await sql`DELETE FROM products WHERE id = ${id}`;
-
-        return new Response(JSON.stringify({ success: true }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-        });
-    } catch (error) {
-        console.error('Error deleting product:', error);
-        return new Response(JSON.stringify({ success: false, error: 'Failed to delete product' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
-        });
+        return NextResponse.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        return NextResponse.json({ success: false, error: 'Failed to delete product' }, { status: 500 });
     }
 }

@@ -23,3 +23,7 @@ export async function sql(
     }
     return q(strings, ...params) as Promise<Record<string, any>[]>;
 }
+
+export function transaction(build: (txn: any) => any[]) {
+    return getQuery().transaction(build);
+}
