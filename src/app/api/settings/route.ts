@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 
         // Fetch all settings
         const results = await sql`SELECT setting_key, setting_value FROM settings`;
-        const settings = {};
+        const settings: Record<string, string> = {};
         
         results.forEach((r: any) => {
             settings[r.setting_key] = r.setting_value;

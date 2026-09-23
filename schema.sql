@@ -1,5 +1,5 @@
 -- ============================================
--- POS System Database Schema (PostgreSQL/Neon Adapted)
+-- POS System Database Schema (PostgreSQL/Neon)
 -- ============================================
 
 -- Users table
@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS users (
     is_active BOOLEAN DEFAULT TRUE,
     phone VARCHAR(20),
     role_id INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Categories table
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS categories (
     name VARCHAR(100) NOT NULL,
     description TEXT,
     is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Suppliers table
@@ -35,7 +35,20 @@ CREATE TABLE IF NOT EXISTS suppliers (
     email VARCHAR(100),
     address TEXT,
     is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Stores table (before orders, which references it)
+CREATE TABLE IF NOT EXISTS stores (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    address TEXT,
+    phone VARCHAR(20),
+    email VARCHAR(100),
+    manager VARCHAR(100),
+    is_default BOOLEAN DEFAULT TRUE,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Products table
@@ -54,8 +67,8 @@ CREATE TABLE IF NOT EXISTS products (
     unit VARCHAR(20) DEFAULT 'pcs',
     is_active BOOLEAN DEFAULT TRUE,
     image VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
     FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL
 );
@@ -64,17 +77,18 @@ CREATE TABLE IF NOT EXISTS products (
 CREATE TABLE IF NOT EXISTS stock_movements (
     id SERIAL PRIMARY KEY,
     product_id INT NOT NULL,
-    movement_type ENUM('in','out','adjustment') NOT NULL,
+    movement_type VARCHAR(20) NOT NULL DEFAULT 'in'
+        CHECK (movement_type IN ('in', 'out', 'adjustment')),
     quantity INT NOT NULL,
     reference VARCHAR(100),
     notes TEXT,
     created_by INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- Orders table (adapted from PHP POS)
+-- Orders table
 CREATE TABLE IF NOT EXISTS orders (
     id SERIAL PRIMARY KEY,
     order_number VARCHAR(20) UNIQUE NOT NULL,
@@ -90,7 +104,7 @@ CREATE TABLE IF NOT EXISTS orders (
     payment_method VARCHAR(50) DEFAULT 'cash',
     status VARCHAR(20) DEFAULT 'completed',
     notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     store_id INT DEFAULT NULL,
     invoice_number VARCHAR(50) UNIQUE DEFAULT NULL,
     fs_number VARCHAR(20) UNIQUE DEFAULT NULL,
@@ -115,17 +129,34 @@ CREATE TABLE IF NOT EXISTS order_items (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
--- Stores table
-CREATE TABLE IF NOT EXISTS stores (
+-- Store transfers table
+CREATE TABLE IF NOT EXISTS store_transfers (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    address TEXT,
-    phone VARCHAR(20),
-    email VARCHAR(100),
-    manager VARCHAR(100),
-    is_default BOOLEAN DEFAULT TRUE,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    reference VARCHAR(50) UNIQUE NOT NULL,
+    from_store_id INT,
+    to_store_id INT,
+    status VARCHAR(20) DEFAULT 'pending'
+        CHECK (status IN ('pending', 'completed', 'cancelled')),
+    total_items INT DEFAULT 0,
+    total_value DECIMAL(12,2) DEFAULT 0,
+    notes TEXT,
+    created_by INT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (from_store_id) REFERENCES stores(id) ON DELETE SET NULL,
+    FOREIGN KEY (to_store_id) REFERENCES stores(id) ON DELETE SET NULL,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Store transfer items table
+CREATE TABLE IF NOT EXISTS store_transfer_items (
+    id SERIAL PRIMARY KEY,
+    transfer_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    unit_cost DECIMAL(10,2) DEFAULT 0,
+    line_total DECIMAL(10,2) DEFAULT 0,
+    FOREIGN KEY (transfer_id) REFERENCES store_transfers(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
 -- Settings table
@@ -133,17 +164,38 @@ CREATE TABLE IF NOT EXISTS settings (
     id SERIAL PRIMARY KEY,
     setting_key VARCHAR(100) UNIQUE NOT NULL,
     setting_value TEXT,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Update triggers for the updated_at columns
+CREATE OR REPLACE FUNCTION set_updated_at() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_users_updated_at ON users;
+CREATE TRIGGER trg_users_updated_at BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_products_updated_at ON products;
+CREATE TRIGGER trg_products_updated_at BEFORE UPDATE ON products
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_settings_updated_at ON settings;
+CREATE TRIGGER trg_settings_updated_at BEFORE UPDATE ON settings
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ============================================
 -- Default data
 -- ============================================
 
--- Default admin user (password: admin123)
+-- Default admin user
 INSERT INTO users (username, password, full_name, email, role) VALUES
-('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin@pos.com', 'admin'),
-('cashier', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Default Cashier', 'cashier@pos.com', 'cashier');
+('admin', 'admin123', 'System Administrator', 'admin@pos.com', 'admin'),
+('cashier', 'cashier123', 'Default Cashier', 'cashier@pos.com', 'cashier')
+ON CONFLICT (username) DO NOTHING;
 
 -- Default categories
 INSERT INTO categories (name, description) VALUES
@@ -151,11 +203,18 @@ INSERT INTO categories (name, description) VALUES
 ('Food & Beverages', 'Food and drink items'),
 ('Electronics', 'Electronic devices and accessories'),
 ('Stationery', 'Office and school supplies'),
-('Household', 'Household items');
+('Household', 'Household items')
+ON CONFLICT DO NOTHING;
 
 -- Default suppliers
 INSERT INTO suppliers (name, contact_person, phone, email) VALUES
-('Default Supplier', 'John Doe', '0123456789', 'supplier@example.com');
+('Default Supplier', 'John Doe', '0123456789', 'supplier@example.com')
+ON CONFLICT DO NOTHING;
+
+-- Default store
+INSERT INTO stores (id, name, address, phone, is_default, is_active) VALUES
+(1, 'Main Store', '123 Main Street', '0123456789', TRUE, TRUE)
+ON CONFLICT (id) DO NOTHING;
 
 -- Default settings
 INSERT INTO settings (setting_key, setting_value) VALUES
@@ -166,7 +225,8 @@ INSERT INTO settings (setting_key, setting_value) VALUES
 ('tax_rate', '10'),
 ('currency_symbol', 'Br'),
 ('receipt_footer', 'Thank you for shopping with us!'),
-('low_stock_threshold', '10');
+('low_stock_threshold', '10')
+ON CONFLICT (setting_key) DO NOTHING;
 
 -- Sample products
 INSERT INTO products (barcode, name, category_id, supplier_id, cost_price, selling_price, stock_quantity, min_stock, unit) VALUES
@@ -174,8 +234,5 @@ INSERT INTO products (barcode, name, category_id, supplier_id, cost_price, selli
 ('1002', 'Notebook A5', 4, 1, 1.00, 2.50, 50, 10, 'pcs'),
 ('1003', 'Ballpoint Pen Blue', 4, 1, 0.30, 0.75, 200, 50, 'pcs'),
 ('1004', 'USB Cable Type-C', 3, 1, 2.00, 5.00, 30, 5, 'pcs'),
-('1005', 'Rice 5kg', 1, 1, 4.00, 6.50, 40, 10, 'bag');
-
--- Default store
-INSERT INTO stores (id, name, address, phone, is_default, is_active) VALUES
-(1, 'Main Store', '123 Main Street', '0123456789', TRUE, TRUE);
+('1005', 'Rice 5kg', 1, 1, 4.00, 6.50, 40, 10, 'bag')
+ON CONFLICT DO NOTHING;
