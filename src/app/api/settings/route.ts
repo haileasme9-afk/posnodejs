@@ -28,8 +28,8 @@ export async function GET(request: Request) {
         const results = await sql`SELECT setting_key, setting_value FROM settings`;
         const settings: Record<string, string> = {};
         
-        results.forEach((r: any) => {
-            settings[r.setting_key] = r.setting_value;
+        results.forEach((r) => {
+            settings[String(r.setting_key)] = String(r.setting_value ?? '');
         });
 
         return new Response(JSON.stringify({ success: true, data: settings }), {

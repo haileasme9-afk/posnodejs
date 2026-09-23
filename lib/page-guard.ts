@@ -4,7 +4,7 @@ import { getSession, canAccess } from '@/lib/auth';
 export async function requirePage(pageKey: string) {
     const session = await getSession();
     if (!session) redirect('/login');
-    if (!canAccess(session.role, pageKey)) redirect('/dashboard');
+    if (!canAccess(session.role, pageKey)) redirect('/');
     return session;
 }
 

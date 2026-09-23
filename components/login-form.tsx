@@ -18,7 +18,7 @@ export function LoginForm() {
         setError(null);
         try {
             await api.post('/api/auth', { username, password });
-            router.push('/dashboard');
+            router.push('/');
         } catch (err: any) {
             setError(err.message || 'Login failed');
             setLoading(false);
