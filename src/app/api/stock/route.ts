@@ -57,13 +57,15 @@ export async function POST(request: Request) {
             });
         }
 
-        let newStock = product[0].stock_quantity;
+        // Coerce: JSON bodies and DECIMAL columns both arrive as strings.
+        const amount = Number(quantity ?? 0);
+        let newStock = Number(product[0].stock_quantity ?? 0);
 
         // Update stock based on movement type
         if (movement_type === 'in') {
-            newStock += quantity;
+            newStock += amount;
         } else if (movement_type === 'out') {
-            newStock -= quantity;
+            newStock -= amount;
             if (newStock < 0) {
                 return new Response(JSON.stringify({ success: false, error: 'Insufficient stock' }), {
                     status: 400,
@@ -71,7 +73,7 @@ export async function POST(request: Request) {
                 });
             }
         } else if (movement_type === 'adjustment') {
-            newStock = quantity;
+            newStock = amount;
         }
 
         // Update product stock
@@ -80,7 +82,7 @@ export async function POST(request: Request) {
         // Create stock movement record
         const result = await sql`
             INSERT INTO stock_movements (product_id, movement_type, quantity, reference, notes, created_by, created_at)
-            VALUES (${product_id}, ${movement_type}, ${quantity}, ${reference}, ${notes}, ${created_by}, NOW())
+            VALUES (${product_id}, ${movement_type}, ${amount}, ${reference}, ${notes}, ${created_by}, NOW())
             RETURNING *;
         `;
 

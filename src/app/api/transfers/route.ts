@@ -104,16 +104,18 @@ export async function POST(request: Request) {
                     });
                 }
 
-                const line_total = product[0].selling_price * item.quantity;
+                const unit_cost = Number(product[0].selling_price ?? 0);
+                const qty = Number(item.quantity ?? 0);
+                const line_total = unit_cost * qty;
 
                 await sql`
                     INSERT INTO store_transfer_items (transfer_id, product_id, quantity, unit_cost, line_total)
-                    VALUES (${transfer.id}, ${item.product_id}, ${item.quantity}, ${product[0].selling_price}, ${line_total});
+                    VALUES (${transfer.id}, ${item.product_id}, ${qty}, ${unit_cost}, ${line_total});
                 `;
 
                 // Update product stock at source store (we'd need store_product inventory tracking)
                 // For now, just track the transfer
-                total_items += item.quantity;
+                total_items += qty;
                 total_value += line_total;
             }
 

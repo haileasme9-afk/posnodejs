@@ -1,5 +1,7 @@
 import { neon } from '@neondatabase/serverless';
 
+export type Row = Record<string, unknown>;
+
 let query: ReturnType<typeof neon> | undefined;
 
 function getQuery() {
@@ -16,10 +18,10 @@ function getQuery() {
 export async function sql(
     strings: TemplateStringsArray | string,
     ...params: unknown[]
-): Promise<Record<string, any>[]> {
+): Promise<Row[]> {
     const q = getQuery();
     if (typeof strings === 'string') {
-        return q.query(strings, params) as Promise<Record<string, any>[]>;
+        return q.query(strings, params) as Promise<Row[]>;
     }
-    return q(strings, ...params) as Promise<Record<string, any>[]>;
+    return q(strings, ...params) as Promise<Row[]>;
 }

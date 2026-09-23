@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# POS System (Next.js)
 
-## Getting Started
+Point-of-sale front end and REST API built with Next.js 16 (App Router), Tailwind CSS v4 and
+Neon Postgres.
 
-First, run the development server:
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run migrate              # applies schema.sql + seed data
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Create `.env.local` in the project root with a single variable (the file is git-ignored):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+DATABASE_URL=postgresql://user:password@host/db?sslmode=require
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Every page degrades gracefully without it — the UI renders with a "Database not connected"
+panel instead of crashing.
 
-## Learn More
+## Screens
 
-To learn more about Next.js, take a look at the following resources:
+| Route       | What it does                                                            |
+| ----------- | ----------------------------------------------------------------------- |
+| `/`         | Dashboard: today's revenue, orders, stock value, 7-day sales, low stock |
+| `/pos`      | Register: product grid, cart, tax, payment method, sale completion       |
+| `/products` | Catalogue with name/barcode/item-code search                             |
+| `/stock`    | Inventory levels, restock filter, stock value                            |
+| `/orders`   | Order history with status filter and revenue summary                     |
+| `/settings` | Store profile, currency and tax defaults from the `settings` table       |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`/api/products`, `/api/orders`, `/api/stock`, `/api/customers`, `/api/settings`,
+`/api/transfers` — all JSON, `GET`/`POST` (plus `PUT`/`DELETE` where implemented).
 
-## Deploy on Vercel
+## Styling
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Tailwind v4 is configured CSS-first: design tokens (colours, radii, shadows) live in the
+`@theme` block of `src/app/globals.css`, and `src/app/globals.css` is imported once from
+`src/app/layout.tsx`. There is no `tailwind.config.js` — re-skin the app by editing the
+tokens.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+| Command         | Purpose                              |
+| --------------- | ------------------------------------ |
+| `npm run dev`   | Dev server on `0.0.0.0:3000`         |
+| `npm run build` | Production build + type check        |
+| `npm run start` | Serve the production build           |
+| `npm run lint`  | ESLint                               |
+| `npm run migrate` | Apply `schema.sql` to Neon         |
