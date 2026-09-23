@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { requirePage } from "@/lib/page-guard";
 import Link from "next/link";
 import { db, currencySymbol } from "@/lib/data";
 import { compactNumber, money } from "@/lib/format";
@@ -23,6 +24,7 @@ export default async function StockPage({
 }: {
     searchParams: Promise<{ filter?: string }>;
 }) {
+    await requirePage('stock');
     const { filter } = await searchParams;
     const lowOnly = filter === "low";
 

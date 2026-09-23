@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { LicenseChip } from "@/components/license";
 import {
     BoxIcon,
@@ -42,14 +42,29 @@ export function Sidebar({
     open,
     onClose,
     storeName,
-    onLogout,
+    user,
 }: {
     open: boolean;
     onClose: () => void;
     storeName: string;
-    onLogout: () => void;
+    user: { fullName: string; role: string } | null;
 }) {
     const pathname = usePathname();
+    const router = useRouter();
+
+    async function logout() {
+        await fetch("/api/auth", { method: "DELETE" }).catch(() => undefined);
+        router.push("/login");
+        router.refresh();
+    }
+
+    const displayName = user?.fullName ?? "System Administrator";
+    const initials = displayName
+        .split(/\s+/)
+        .map((part) => part[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase();
 
     return (
         <>
@@ -113,14 +128,21 @@ export function Sidebar({
                 <div className="shrink-0 space-y-2 border-t border-white/10 px-3 py-3">
                     <LicenseChip />
                     <div className="flex items-center gap-2.5 px-1">
-                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/10 text-nav-text">
-                            <PersonIcon width={15} height={15} />
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/10 text-[11px] font-semibold text-white">
+                            {initials || <PersonIcon width={15} height={15} />}
                         </span>
-                        <span className="truncate text-[13px] text-nav-text">System Administrator</span>
+                        <span className="min-w-0 leading-tight">
+                            <span className="block truncate text-[13px] text-nav-text">
+                                {displayName}
+                            </span>
+                            <span className="block text-[11px] text-nav-text/60 capitalize">
+                                {user?.role ?? "admin"}
+                            </span>
+                        </span>
                     </div>
                     <button
                         type="button"
-                        onClick={onLogout}
+                        onClick={() => void logout()}
                         className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] text-danger hover:bg-white/5"
                     >
                         <LogoutIcon width={16} height={16} />

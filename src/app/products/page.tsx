@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { requirePage } from "@/lib/page-guard";
 import { db, currencySymbol } from "@/lib/data";
 import { compactNumber, money } from "@/lib/format";
 import {
@@ -23,6 +24,7 @@ export default async function ProductsPage({
 }: {
     searchParams: Promise<{ q?: string }>;
 }) {
+    await requirePage('products');
     const { q } = await searchParams;
     const search = q?.trim() ?? "";
 

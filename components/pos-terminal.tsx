@@ -85,6 +85,9 @@ export function PosTerminal({
                 fetch("/api/products?limit=200&active_only=true"),
                 fetch("/api/settings"),
             ]);
+            if (productsRes.status === 401) {
+                throw new Error("Session expired — sign in again to load products.");
+            }
             const productsJson = await productsRes.json();
             if (!productsJson.success) throw new Error(productsJson.error ?? "Could not load products");
 
@@ -187,27 +190,17 @@ export function PosTerminal({
         setSubmitting(true);
         setSubmitError(null);
 
+        // The orders API recomputes prices, tax, stock deductions and
+        // movements server-side inside one transaction, so the client only
+        // sends what was picked and how it was paid for.
         const payload = {
-            user_id: 1,
-            store_id: 1,
             customer_name: customer.trim() || "Walk-in Customer",
-            subtotal,
-            tax_rate: taxRatePct,
-            tax_amount: taxAmount,
-            discount: 0,
-            total,
-            amount_paid: payment === "cash" ? paid || total : total,
-            change_amount: change,
             payment_method: payment,
-            status: "completed",
+            amount_paid: payment === "cash" ? paid || total : undefined,
+            discount: 0,
             items: cart.map((line) => ({
                 product_id: line.product.id,
-                product_name: line.product.name,
                 quantity: line.quantity,
-                unit_price: line.product.selling_price,
-                cost_price: 0,
-                discount: 0,
-                subtotal: round2(line.product.selling_price * line.quantity),
             })),
         };
 
@@ -218,6 +211,9 @@ export function PosTerminal({
                 body: JSON.stringify(payload),
             });
             const json = await response.json();
+            if (response.status === 401) {
+                throw new Error("Session expired — sign in again to save the sale.");
+            }
             if (!response.ok || !json.success) {
                 throw new Error(json.error ?? `Request failed (${response.status})`);
             }
@@ -225,31 +221,7 @@ export function PosTerminal({
             const order = Array.isArray(json.data) ? json.data[0] : json.data;
             const orderNumber: string = order?.order_number ?? "—";
 
-            // Decrement stock for every sold line; failures are surfaced, not swallowed.
-            const stockErrors: string[] = [];
-            for (const line of cart) {
-                const stockResponse = await fetch("/api/stock", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        product_id: line.product.id,
-                        movement_type: "out",
-                        quantity: line.quantity,
-                        reference: orderNumber,
-                        notes: `Sale ${orderNumber}`,
-                        created_by: 1,
-                    }),
-                });
-                const stockJson = await stockResponse.json().catch(() => null);
-                if (!stockResponse.ok || !stockJson?.success) {
-                    stockErrors.push(`${line.product.name}: ${stockJson?.error ?? stockResponse.status}`);
-                }
-            }
-
             setReceipt({ number: orderNumber, total, change });
-            if (stockErrors.length > 0) {
-                setSubmitError(`Order saved, but stock update failed for ${stockErrors.join("; ")}`);
-            }
             resetSale();
             void loadProducts();
         } catch (error) {

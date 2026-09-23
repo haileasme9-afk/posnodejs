@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { requirePage } from "@/lib/page-guard";
 import { ReceiveStockForm } from "@/components/receive-stock-form";
 import { ReceiveIcon } from "@/components/icons";
 import {
@@ -18,6 +19,7 @@ export const metadata: Metadata = { title: "Receive Stock" };
 export const dynamic = "force-dynamic";
 
 export default async function ReceiveStockPage() {
+    await requirePage('receiving');
     const [products, movements] = await Promise.all([db.products(), dbExtra.stockMovements()]);
 
     return (

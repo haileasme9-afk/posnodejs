@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { requirePage } from "@/lib/page-guard";
 import { PersonIcon } from "@/components/icons";
 import {
     Badge,
@@ -17,6 +18,7 @@ export const metadata: Metadata = { title: "Customers" };
 export const dynamic = "force-dynamic";
 
 export default async function CustomersPage() {
+    await requirePage('customers');
     const customers = await dbExtra.customers();
 
     return (

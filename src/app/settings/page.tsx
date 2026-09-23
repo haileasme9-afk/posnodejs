@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { requirePage } from "@/lib/page-guard";
 import { db, DEFAULT_SETTINGS } from "@/lib/data";
 import { Badge, Card, DatabaseNotice, PageHeader } from "@/components/ui";
 import { StoreIcon } from "@/components/icons";
@@ -18,6 +19,7 @@ const FIELDS = [
 ];
 
 export default async function SettingsPage() {
+    await requirePage('settings');
     const settings = await db.settings();
     const values = settings.ok ? settings.data : { ...DEFAULT_SETTINGS };
 

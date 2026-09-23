@@ -136,13 +136,23 @@ const buttonBase =
 export function Button({
     tone = "primary",
     size = "md",
+    loading = false,
     className = "",
     ...props
-}: ComponentProps<"button"> & { tone?: keyof typeof buttonTone; size?: "sm" | "md" | "lg" }) {
+}: ComponentProps<"button"> & {
+    tone?: keyof typeof buttonTone;
+    size?: "sm" | "md" | "lg";
+    loading?: boolean;
+}) {
     const padding =
         size === "sm" ? "px-2.5 py-1.5 text-xs" : size === "lg" ? "px-5 py-2.5 text-base" : "";
     return (
-        <button className={`${buttonBase} ${buttonTone[tone]} ${padding} ${className}`} {...props} />
+        <button
+            className={`${buttonBase} ${buttonTone[tone]} ${padding} ${className}`}
+            disabled={props.disabled || loading}
+            aria-busy={loading || undefined}
+            {...props}
+        />
     );
 }
 
@@ -257,6 +267,25 @@ export function EmptyState({
             <p className="text-sm font-semibold text-foreground">{title}</p>
             {description && <p className="max-w-sm text-sm text-muted">{description}</p>}
             {action && <div className="mt-2">{action}</div>}
+        </div>
+    );
+}
+
+export function Field({ label, children }: { label: string; children: ReactNode }) {
+    return (
+        <label className="block">
+            <span className="mb-1 block text-[11px] font-medium tracking-wide text-muted uppercase">
+                {label}
+            </span>
+            {children}
+        </label>
+    );
+}
+
+export function Alert({ children }: { children: ReactNode }) {
+    return (
+        <div className="rounded-md border border-danger/25 bg-danger-soft px-3 py-2 text-sm text-danger">
+            {children}
         </div>
     );
 }

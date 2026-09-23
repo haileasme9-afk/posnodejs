@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { requirePage } from "@/lib/page-guard";
 import { TruckIcon } from "@/components/icons";
 import {
     Card,
@@ -16,6 +17,7 @@ export const metadata: Metadata = { title: "Suppliers" };
 export const dynamic = "force-dynamic";
 
 export default async function SuppliersPage() {
+    await requirePage('suppliers');
     const suppliers = await dbExtra.suppliers();
 
     return (

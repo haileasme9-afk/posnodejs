@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { requirePage } from "@/lib/page-guard";
 import Link from "next/link";
 import { db, currencySymbol } from "@/lib/data";
 import { formatDateTime, money, titleCase, toNumber } from "@/lib/format";
@@ -37,6 +38,7 @@ export default async function OrdersPage({
 }: {
     searchParams: Promise<{ status?: string }>;
 }) {
+    await requirePage('orders');
     const { status } = await searchParams;
     const active = FILTERS.some((filter) => filter.id === status) ? (status ?? "") : "";
 

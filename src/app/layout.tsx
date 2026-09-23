@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
+import { getSession } from "@/lib/auth";
 import { db } from "@/lib/data";
 import { formatHeaderDate } from "@/lib/format";
 
@@ -23,7 +24,7 @@ export default async function RootLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const settings = await db.settings();
+    const [settings, session] = await Promise.all([db.settings(), getSession()]);
     const storeName = settings.ok
         ? (settings.data.store_name || "KINGTEWOS TRADING")
         : "KINGTEWOS TRADING";
@@ -31,9 +32,17 @@ export default async function RootLayout({
     return (
         <html lang="en">
             <body className="min-h-screen bg-background text-foreground antialiased">
-                <AppShell storeName={storeName} today={formatHeaderDate()}>
-                    {children}
-                </AppShell>
+                {session ? (
+                    <AppShell
+                        storeName={storeName}
+                        today={formatHeaderDate()}
+                        user={{ fullName: session.full_name, role: session.role }}
+                    >
+                        {children}
+                    </AppShell>
+                ) : (
+                    children
+                )}
             </body>
         </html>
     );

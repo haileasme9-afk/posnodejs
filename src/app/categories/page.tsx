@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { requirePage } from "@/lib/page-guard";
 import { TagIcon } from "@/components/icons";
 import {
     Badge,
@@ -17,6 +18,7 @@ export const metadata: Metadata = { title: "Categories" };
 export const dynamic = "force-dynamic";
 
 export default async function CategoriesPage() {
+    await requirePage('categories');
     const categories = await dbExtra.categories();
 
     return (

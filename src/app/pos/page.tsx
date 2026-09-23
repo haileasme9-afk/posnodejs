@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { requirePage } from "@/lib/page-guard";
 import { PosTerminal } from "@/components/pos-terminal";
 import { PageHeader } from "@/components/ui";
 import { currencySymbol, db, taxRate } from "@/lib/data";
@@ -8,6 +9,7 @@ export const metadata: Metadata = { title: "New Sale" };
 export const dynamic = "force-dynamic";
 
 export default async function PosPage() {
+    await requirePage('pos');
     const [products, settings] = await Promise.all([db.products(), db.settings()]);
 
     const catalogue = products.ok ? products.data : [];

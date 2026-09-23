@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { requirePage } from "@/lib/page-guard";
 import Link from "next/link";
 import { LicenseBanner } from "@/components/license";
 import {
@@ -25,6 +26,7 @@ export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
+    await requirePage('dashboard');
     const [dashboard, monthly, settings] = await Promise.all([
         db.dashboard(),
         dbExtra.monthlySales(),

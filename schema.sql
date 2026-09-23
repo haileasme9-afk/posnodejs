@@ -225,7 +225,21 @@ INSERT INTO settings (setting_key, setting_value) VALUES
 ('tax_rate', '10'),
 ('currency_symbol', 'Br'),
 ('receipt_footer', 'Thank you for shopping with us!'),
-('low_stock_threshold', '10')
+('low_stock_threshold', '10'),
+('company_name', 'My Company PLC'),
+('trade_name', 'My Company'),
+('motif', ''),
+('tin_number', ''),
+('machine_number', ''),
+('receipt_show_tin', 'true'),
+('invoice_prefix', 'CA'),
+('invoice_suffix', ''),
+('invoice_number_next', '1'),
+('fs_number_next', '1'),
+('active_store_id', '1'),
+('pos_customer_default', 'Walk-in Customer'),
+('printer_connection', 'browser'),
+('receipt_width', '80')
 ON CONFLICT (setting_key) DO NOTHING;
 
 -- Sample products
@@ -235,4 +249,177 @@ INSERT INTO products (barcode, name, category_id, supplier_id, cost_price, selli
 ('1003', 'Ballpoint Pen Blue', 4, 1, 0.30, 0.75, 200, 50, 'pcs'),
 ('1004', 'USB Cable Type-C', 3, 1, 2.00, 5.00, 30, 5, 'pcs'),
 ('1005', 'Rice 5kg', 1, 1, 4.00, 6.50, 40, 10, 'bag')
+ON CONFLICT DO NOTHING;
+
+-- ============================================
+-- Extended schema (ported from PHP pos-system)
+-- ============================================
+
+-- Customers table
+CREATE TABLE IF NOT EXISTS customers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    phone VARCHAR(30),
+    email VARCHAR(150),
+    address TEXT,
+    company VARCHAR(150),
+    tax_number VARCHAR(50),
+    notes TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Stock receivings (GRN) tables
+CREATE TABLE IF NOT EXISTS stock_receivings (
+    id SERIAL PRIMARY KEY,
+    reference VARCHAR(50) UNIQUE NOT NULL,
+    store_id INT,
+    supplier_id INT,
+    total_cost DECIMAL(12,2) DEFAULT 0,
+    item_count INT DEFAULT 0,
+    notes TEXT,
+    created_by INT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL,
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS stock_receiving_items (
+    id SERIAL PRIMARY KEY,
+    receiving_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    unit_cost DECIMAL(10,2) NOT NULL,
+    line_total DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (receiving_id) REFERENCES stock_receivings(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+-- Roles table
+CREATE TABLE IF NOT EXISTS roles (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,
+    display_name VARCHAR(100),
+    description TEXT,
+    is_system BOOLEAN DEFAULT FALSE,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Permissions table
+CREATE TABLE IF NOT EXISTS permissions (
+    id SERIAL PRIMARY KEY,
+    role_id INT NOT NULL,
+    page_key VARCHAR(50) NOT NULL,
+    can_access BOOLEAN DEFAULT TRUE,
+    UNIQUE (role_id, page_key),
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+);
+
+-- Licenses table
+CREATE TABLE IF NOT EXISTS licenses (
+    id SERIAL PRIMARY KEY,
+    license_key TEXT NOT NULL,
+    company_name VARCHAR(200),
+    tin_number VARCHAR(50) UNIQUE,
+    modules TEXT,
+    start_date DATE,
+    expiry_date DATE,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Held orders table
+CREATE TABLE IF NOT EXISTS held_orders (
+    id SERIAL PRIMARY KEY,
+    user_id INT,
+    store_id INT,
+    customer_id INT,
+    customer_name VARCHAR(150),
+    cart_data TEXT NOT NULL,
+    subtotal DECIMAL(12,2) DEFAULT 0,
+    tax_amount DECIMAL(12,2) DEFAULT 0,
+    discount DECIMAL(12,2) DEFAULT 0,
+    total DECIMAL(12,2) DEFAULT 0,
+    notes TEXT,
+    held_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL,
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL
+);
+
+-- Cash drawer sessions table
+CREATE TABLE IF NOT EXISTS cash_sessions (
+    id SERIAL PRIMARY KEY,
+    user_id INT,
+    store_id INT,
+    opening_cash DECIMAL(12,2) DEFAULT 0,
+    closing_cash DECIMAL(12,2),
+    expected_cash DECIMAL(12,2),
+    discrepancy DECIMAL(12,2),
+    total_sales DECIMAL(12,2) DEFAULT 0,
+    total_refunds DECIMAL(12,2) DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'open'
+        CHECK (status IN ('open', 'closed')),
+    notes TEXT,
+    opened_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    closed_at TIMESTAMPTZ,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
+);
+
+-- Audit log table
+CREATE TABLE IF NOT EXISTS audit_log (
+    id SERIAL PRIMARY KEY,
+    user_id INT,
+    action VARCHAR(100),
+    entity VARCHAR(50),
+    entity_id INT,
+    details TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Attach open cash sessions to orders
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS cash_session_id INT;
+
+-- Enforce non-negative stock (used by checkout transaction guard)
+ALTER TABLE products DROP CONSTRAINT IF EXISTS check_stock_non_negative;
+ALTER TABLE products ADD CONSTRAINT check_stock_non_negative CHECK (stock_quantity >= 0);
+
+-- Default roles
+INSERT INTO roles (id, name, display_name, description, is_system, is_active) VALUES
+(1, 'admin', 'Administrator', 'Full system access', TRUE, TRUE),
+(2, 'manager', 'Manager', 'Manage store operations', TRUE, TRUE),
+(3, 'cashier', 'Cashier', 'Handle sales at the counter', TRUE, TRUE)
+ON CONFLICT (id) DO NOTHING;
+
+-- Default permissions (admin: everything; manager: all but users; cashier: sales/pos)
+WITH perms(page_key) AS (
+    VALUES ('dashboard'), ('pos'), ('products'), ('categories'), ('suppliers'),
+           ('customers'), ('receiving'), ('transfers'), ('stock'), ('orders'),
+           ('reports'), ('users'), ('settings')
+)
+INSERT INTO permissions (role_id, page_key, can_access)
+SELECT r.id, p.page_key, TRUE
+FROM (SELECT id FROM roles WHERE name IN ('admin', 'manager')) r
+CROSS JOIN perms p
+ON CONFLICT (role_id, page_key) DO NOTHING;
+
+WITH perms(page_key) AS (
+    VALUES ('dashboard'), ('pos'), ('products'), ('categories'), ('suppliers'),
+           ('customers'), ('receiving'), ('transfers'), ('stock'), ('orders'),
+           ('reports'), ('users'), ('settings')
+)
+INSERT INTO permissions (role_id, page_key, can_access)
+SELECT r.id, p.page_key, TRUE
+FROM (SELECT id FROM roles WHERE name = 'cashier') r
+CROSS JOIN perms p
+WHERE p.page_key IN ('dashboard', 'pos', 'products', 'orders', 'stock', 'customers')
+ON CONFLICT (role_id, page_key) DO NOTHING;
+
+-- Default customers
+INSERT INTO customers (name, phone, email, company, tax_number) VALUES
+('Walk-in Customer', '', '', '', '')
 ON CONFLICT DO NOTHING;

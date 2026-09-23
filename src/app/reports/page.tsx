@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { requirePage } from "@/lib/page-guard";
 import { ChartLineIcon, ReportIcon } from "@/components/icons";
 import {
     Card,
@@ -17,6 +18,7 @@ export const metadata: Metadata = { title: "Reports" };
 export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
+    await requirePage('reports');
     const [reports, dashboard, settings] = await Promise.all([
         dbExtra.reports(),
         db.dashboard(),

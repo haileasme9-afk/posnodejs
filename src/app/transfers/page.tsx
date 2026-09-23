@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { requirePage } from "@/lib/page-guard";
 import { SwapIcon } from "@/components/icons";
 import {
     Badge,
@@ -25,6 +26,7 @@ function statusTone(status: string) {
 }
 
 export default async function TransfersPage() {
+    await requirePage('transfers');
     const [transfers, settings] = await Promise.all([dbExtra.transfers(), db.settings()]);
     const symbol = settings.ok ? currencySymbol(settings.data) : "Br";
 
