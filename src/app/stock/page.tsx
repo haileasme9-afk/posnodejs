@@ -37,7 +37,7 @@ export default async function StockPage({
     return (
         <>
             <PageHeader
-                title="Stock"
+                title="Stock Management"
                 description="Quantities on hand across the catalogue"
             >
                 <Link
@@ -64,21 +64,21 @@ export default async function StockPage({
                     label="Units on hand"
                     value={compactNumber(totalUnits)}
                     icon={<LayersIcon width={18} height={18} />}
-                    tone="primary"
+                    accent="indigo"
                 />
                 <StatCard
                     label="Stock value"
                     value={money(totalValue, symbol)}
                     hint="At cost price"
                     icon={<BoxIcon width={18} height={18} />}
-                    tone="success"
+                    accent="green"
                 />
                 <StatCard
                     label="Needs restocking"
                     value={compactNumber(lowCount)}
                     hint="At or below minimum"
                     icon={<AlertIcon width={18} height={18} />}
-                    tone={lowCount > 0 ? "danger" : "neutral"}
+                    accent={lowCount > 0 ? "orange" : "purple"}
                 />
             </div>
 

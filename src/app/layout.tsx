@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
+import { db } from "@/lib/data";
+import { formatHeaderDate } from "@/lib/format";
 
 export const metadata: Metadata = {
     title: {
@@ -13,18 +15,25 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
     width: "device-width",
     initialScale: 1,
-    themeColor: "#0f172a",
+    themeColor: "#232059",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const settings = await db.settings();
+    const storeName = settings.ok
+        ? (settings.data.store_name || "KINGTEWOS TRADING")
+        : "KINGTEWOS TRADING";
+
     return (
         <html lang="en">
             <body className="min-h-screen bg-background text-foreground antialiased">
-                <AppShell>{children}</AppShell>
+                <AppShell storeName={storeName} today={formatHeaderDate()}>
+                    {children}
+                </AppShell>
             </body>
         </html>
     );

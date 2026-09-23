@@ -31,7 +31,7 @@ async function safe<T>(run: () => Promise<T>): Promise<Result<T>> {
 }
 
 export const DEFAULT_SETTINGS = {
-    store_name: "My POS Store",
+    store_name: "KINGTEWOS TRADING",
     currency_symbol: "Br",
     tax_rate: "10",
     store_address: "123 Main Street",
@@ -292,3 +292,156 @@ export function currencySymbol(settings: Settings | undefined): string {
 export function taxRate(settings: Settings | undefined): number {
     return toNumber(settings?.tax_rate ?? DEFAULT_SETTINGS.tax_rate);
 }
+
+/* ------------------------------------------------------------------ *
+ * Extra readers used by the reference-style screens.
+ * ------------------------------------------------------------------ */
+
+export const dbExtra = {
+    async monthlySales(): Promise<Result<number>> {
+        return safe(async () => {
+            const rows = await sql`SELECT COALESCE(SUM(total), 0) AS revenue
+                                   FROM orders
+                                   WHERE created_at >= date_trunc('month', now())`;
+            return toNumber(rows[0]?.revenue);
+        });
+    },
+
+    async categories(): Promise<
+        Result<{ id: number; name: string; description: string | null; is_active: boolean; products: number }[]>
+    > {
+        return safe(async () => {
+            const rows = await sql`SELECT c.id, c.name, c.description, c.is_active,
+                                          (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id) AS products
+                                   FROM categories c
+                                   ORDER BY c.name ASC`;
+            return rows.map((row) => ({
+                id: toNumber(row.id),
+                name: str(row.name),
+                description: strOrNull(row.description),
+                is_active: Boolean(row.is_active),
+                products: toNumber(row.products),
+            }));
+        });
+    },
+
+    async suppliers(): Promise<
+        Result<{ id: number; name: string; contact_person: string | null; phone: string | null; email: string | null; products: number }[]>
+    > {
+        return safe(async () => {
+            const rows = await sql`SELECT s.id, s.name, s.contact_person, s.phone, s.email,
+                                          (SELECT COUNT(*) FROM products p WHERE p.supplier_id = s.id) AS products
+                                   FROM suppliers s
+                                   ORDER BY s.name ASC`;
+            return rows.map((row) => ({
+                id: toNumber(row.id),
+                name: str(row.name),
+                contact_person: strOrNull(row.contact_person),
+                phone: strOrNull(row.phone),
+                email: strOrNull(row.email),
+                products: toNumber(row.products),
+            }));
+        });
+    },
+
+    async customers(): Promise<
+        Result<{ id: number; full_name: string; username: string; email: string | null; phone: string | null; role: string; is_active: boolean }[]>
+    > {
+        return safe(async () => {
+            const rows = await sql`SELECT id, full_name, username, email, phone, role, is_active
+                                   FROM users
+                                   ORDER BY full_name ASC`;
+            return rows.map((row) => ({
+                id: toNumber(row.id),
+                full_name: str(row.full_name),
+                username: str(row.username),
+                email: strOrNull(row.email),
+                phone: strOrNull(row.phone),
+                role: str(row.role),
+                is_active: Boolean(row.is_active),
+            }));
+        });
+    },
+
+    async stockMovements(): Promise<
+        Result<{ id: number; product_name: string; movement_type: string; quantity: number; reference: string | null; created_at: string }[]>
+    > {
+        return safe(async () => {
+            const rows = await sql`SELECT m.id, m.movement_type, m.quantity, m.reference, m.created_at,
+                                          p.name AS product_name
+                                   FROM stock_movements m
+                                   LEFT JOIN products p ON m.product_id = p.id
+                                   ORDER BY m.created_at DESC
+                                   LIMIT 50`;
+            return rows.map((row) => ({
+                id: toNumber(row.id),
+                product_name: str(row.product_name),
+                movement_type: str(row.movement_type),
+                quantity: toNumber(row.quantity),
+                reference: strOrNull(row.reference),
+                created_at: str(row.created_at),
+            }));
+        });
+    },
+
+    async transfers(): Promise<
+        Result<{ id: number; reference: string; from_store: string | null; to_store: string | null; status: string; total_items: number; total_value: number; created_at: string }[]>
+    > {
+        return safe(async () => {
+            const rows = await sql`SELECT t.id, t.reference, t.status, t.total_items, t.total_value, t.created_at,
+                                          s1.name AS from_store, s2.name AS to_store
+                                   FROM store_transfers t
+                                   LEFT JOIN stores s1 ON t.from_store_id = s1.id
+                                   LEFT JOIN stores s2 ON t.to_store_id = s2.id
+                                   ORDER BY t.created_at DESC
+                                   LIMIT 50`;
+            return rows.map((row) => ({
+                id: toNumber(row.id),
+                reference: str(row.reference),
+                from_store: strOrNull(row.from_store),
+                to_store: strOrNull(row.to_store),
+                status: str(row.status),
+                total_items: toNumber(row.total_items),
+                total_value: toNumber(row.total_value),
+                created_at: str(row.created_at),
+            }));
+        });
+    },
+
+    async reports(): Promise<
+        Result<{
+            daily: { day: string; orders: number; revenue: number }[];
+            payments: { method: string; orders: number; revenue: number }[];
+        }>
+    > {
+        return safe(async () => {
+            const [daily, payments] = await Promise.all([
+                sql`SELECT to_char(date_trunc('day', created_at), 'Mon DD') AS day,
+                           date_trunc('day', created_at) AS bucket,
+                           COUNT(*) AS orders,
+                           COALESCE(SUM(total), 0) AS revenue
+                    FROM orders
+                    WHERE created_at >= date_trunc('day', now()) - interval '13 days'
+                    GROUP BY 1, 2
+                    ORDER BY 2 DESC
+                    LIMIT 14`,
+                sql`SELECT payment_method AS method, COUNT(*) AS orders, COALESCE(SUM(total), 0) AS revenue
+                    FROM orders
+                    GROUP BY payment_method
+                    ORDER BY revenue DESC`,
+            ]);
+            return {
+                daily: daily.map((row) => ({
+                    day: str(row.day),
+                    orders: toNumber(row.orders),
+                    revenue: toNumber(row.revenue),
+                })),
+                payments: payments.map((row) => ({
+                    method: str(row.method, "cash"),
+                    orders: toNumber(row.orders),
+                    revenue: toNumber(row.revenue),
+                })),
+            };
+        });
+    },
+};

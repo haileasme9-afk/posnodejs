@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 
 /* ------------------------------------------------------------------ *
- * Small, shared building blocks used across every page.
+ * Shared building blocks, styled after the KINGTEWOS TRADING screens.
  * ------------------------------------------------------------------ */
 
 type Tone = "neutral" | "primary" | "success" | "warning" | "danger";
@@ -26,7 +26,7 @@ export function Badge({
 }) {
     return (
         <span
-            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${toneBadge[tone]} ${className}`}
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${toneBadge[tone]} ${className}`}
         >
             {children}
         </span>
@@ -36,6 +36,7 @@ export function Badge({
 export function Card({
     title,
     subtitle,
+    icon,
     action,
     children,
     className = "",
@@ -43,6 +44,7 @@ export function Card({
 }: {
     title?: ReactNode;
     subtitle?: ReactNode;
+    icon?: ReactNode;
     action?: ReactNode;
     children: ReactNode;
     className?: string;
@@ -53,12 +55,13 @@ export function Card({
             className={`rounded-card border border-border bg-surface shadow-card ${className}`}
         >
             {(title || action) && (
-                <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
-                    <div>
-                        {title && (
-                            <h2 className="text-[15px] font-semibold text-foreground">{title}</h2>
-                        )}
-                        {subtitle && <p className="mt-0.5 text-xs text-muted">{subtitle}</p>}
+                <header className="flex items-center justify-between gap-4 border-b border-border px-5 py-3.5">
+                    <div className="flex items-center gap-2.5">
+                        {icon}
+                        <div>
+                            <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+                            {subtitle && <p className="mt-0.5 text-xs text-muted">{subtitle}</p>}
+                        </div>
                     </div>
                     {action}
                 </header>
@@ -68,33 +71,51 @@ export function Card({
     );
 }
 
+type Accent = "indigo" | "green" | "orange" | "purple";
+
+const accentBorder: Record<Accent, string> = {
+    indigo: "border-l-stat-indigo",
+    green: "border-l-stat-green",
+    orange: "border-l-stat-orange",
+    purple: "border-l-stat-purple",
+};
+
+const accentIcon: Record<Accent, string> = {
+    indigo: "bg-stat-indigo/10 text-stat-indigo",
+    green: "bg-stat-green/10 text-stat-green",
+    orange: "bg-stat-orange/10 text-stat-orange",
+    purple: "bg-stat-purple/10 text-stat-purple",
+};
+
 export function StatCard({
     label,
     value,
     hint,
     icon,
-    tone = "primary",
+    accent = "indigo",
 }: {
     label: string;
     value: ReactNode;
     hint?: ReactNode;
     icon?: ReactNode;
-    tone?: Tone;
+    accent?: Accent;
 }) {
     return (
-        <div className="rounded-card border border-border bg-surface p-5 shadow-card">
-            <div className="flex items-start justify-between gap-3">
-                <p className="text-xs font-medium tracking-wide text-muted uppercase">{label}</p>
-                {icon && (
-                    <span
-                        className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border ${toneBadge[tone]}`}
-                    >
-                        {icon}
-                    </span>
-                )}
+        <div
+            className={`flex items-center gap-4 rounded-card border border-border border-l-4 bg-surface p-4 shadow-card ${accentBorder[accent]}`}
+        >
+            {icon && (
+                <span
+                    className={`grid h-11 w-11 shrink-0 place-items-center rounded-lg ${accentIcon[accent]}`}
+                >
+                    {icon}
+                </span>
+            )}
+            <div className="min-w-0">
+                <p className="truncate text-xl font-bold text-foreground">{value}</p>
+                <p className="mt-0.5 text-xs text-muted">{label}</p>
+                {hint && <p className="mt-0.5 text-[11px] text-faint">{hint}</p>}
             </div>
-            <p className="mt-3 text-2xl font-semibold text-foreground">{value}</p>
-            {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
         </div>
     );
 }
@@ -110,7 +131,7 @@ const buttonTone: Record<string, string> = {
 };
 
 const buttonBase =
-    "inline-flex items-center justify-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed";
+    "inline-flex items-center justify-center gap-2 rounded-md border px-3.5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed";
 
 export function Button({
     tone = "primary",
@@ -148,9 +169,9 @@ export function PageHeader({
     children?: ReactNode;
 }) {
     return (
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <h1 className="text-xl font-semibold text-foreground sm:text-2xl">{title}</h1>
+                <h1 className="text-xl font-semibold text-foreground">{title}</h1>
                 {description && <p className="mt-1 text-sm text-muted">{description}</p>}
             </div>
             {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
@@ -158,13 +179,10 @@ export function PageHeader({
     );
 }
 
-export function Input({
-    className = "",
-    ...props
-}: ComponentProps<"input">) {
+export function Input({ className = "", ...props }: ComponentProps<"input">) {
     return (
         <input
-            className={`h-10 w-full rounded-lg border border-border-strong bg-surface px-3 text-sm text-foreground placeholder:text-faint focus:border-primary focus:outline-none ${className}`}
+            className={`h-9 w-full rounded-md border border-border-strong bg-surface px-3 text-sm text-foreground placeholder:text-faint focus:border-primary focus:outline-none ${className}`}
             {...props}
         />
     );
@@ -173,7 +191,7 @@ export function Input({
 export function Select({ className = "", ...props }: ComponentProps<"select">) {
     return (
         <select
-            className={`h-10 w-full rounded-lg border border-border-strong bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none ${className}`}
+            className={`h-9 w-full rounded-md border border-border-strong bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none ${className}`}
             {...props}
         />
     );
@@ -200,7 +218,7 @@ export function Th({
         align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
     return (
         <th
-            className={`border-b border-border bg-surface-alt px-4 py-2.5 text-xs font-semibold tracking-wide text-muted uppercase ${alignment} ${className}`}
+            className={`border-b border-border bg-surface-alt px-4 py-2.5 text-[11px] font-semibold tracking-wider text-muted uppercase ${alignment} ${className}`}
         >
             {children}
         </th>
@@ -219,7 +237,7 @@ export function Td({
     const alignment =
         align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
     return (
-        <td className={`border-b border-border px-4 py-3 text-foreground ${alignment} ${className}`}>
+        <td className={`border-b border-border px-4 py-3 text-[13px] text-foreground ${alignment} ${className}`}>
             {children}
         </td>
     );
@@ -265,8 +283,8 @@ export function DatabaseNotice({ error }: { error?: string }) {
         <Notice tone="warning" title="Database not connected">
             <p>
                 This page renders live data from Postgres. Set <code>DATABASE_URL</code> (a Neon
-                connection string) in <code>.env.local</code>, run{" "}
-                <code>npm run migrate</code>, then reload.
+                connection string) in <code>.env.local</code>, run <code>npm run migrate</code>,
+                then reload.
             </p>
             {error && (
                 <p className="mt-2 rounded-md bg-white/60 px-2 py-1 font-mono text-xs">{error}</p>

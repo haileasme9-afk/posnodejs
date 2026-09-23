@@ -64,19 +64,19 @@ export default async function OrdersPage({
                     label="Orders shown"
                     value={String(rows.length)}
                     icon={<ReceiptIcon width={18} height={18} />}
-                    tone="primary"
+                    accent="indigo"
                 />
                 <StatCard
                     label="Revenue shown"
                     value={money(revenue, symbol)}
                     icon={<CashIcon width={18} height={18} />}
-                    tone="success"
+                    accent="green"
                 />
                 <StatCard
                     label="Average ticket"
                     value={money(rows.length ? revenue / rows.length : 0, symbol)}
                     hint="Per order"
-                    tone="neutral"
+                    accent="purple"
                 />
             </div>
 

@@ -10,7 +10,7 @@ export function money(value: unknown, symbol = "Br"): string {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     });
-    return `${symbol} ${amount}`;
+    return `${symbol}${amount}`;
 }
 
 export function compactNumber(value: unknown): string {
@@ -28,9 +28,20 @@ export function formatDateTime(value: unknown): string {
     if (!date) return "—";
     return date.toLocaleString("en-US", {
         month: "short",
-        day: "numeric",
+        day: "2-digit",
         hour: "2-digit",
         minute: "2-digit",
+        hour12: false,
+    });
+}
+
+/** "Wed, Sep 23, 2026" — the format shown in the reference header. */
+export function formatHeaderDate(date = new Date()): string {
+    return date.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "2-digit",
+        year: "numeric",
     });
 }
 

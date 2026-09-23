@@ -16,7 +16,7 @@ export default async function PosPage() {
     return (
         <>
             <PageHeader
-                title="New sale"
+                title="Point of Sale"
                 description="Pick items, take payment and save the receipt"
             />
             <PosTerminal

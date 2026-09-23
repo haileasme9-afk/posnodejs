@@ -2,110 +2,130 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LicenseChip } from "@/components/license";
 import {
+    BoxIcon,
     CartIcon,
     CloseIcon,
     DashboardIcon,
-    LayersIcon,
+    LogoutIcon,
+    PersonIcon,
     ReceiptIcon,
-    BoxIcon,
-    SettingsIcon,
+    ReceiveIcon,
+    ReportIcon,
+    StackIcon,
     StoreIcon,
+    SwapIcon,
+    TagIcon,
+    TruckIcon,
 } from "@/components/icons";
 
 export const NAV_ITEMS = [
-    { href: "/", label: "Dashboard", icon: DashboardIcon, group: "Overview" },
-    { href: "/pos", label: "New Sale", icon: CartIcon, group: "Overview" },
-    { href: "/products", label: "Products", icon: BoxIcon, group: "Inventory" },
-    { href: "/stock", label: "Stock", icon: LayersIcon, group: "Inventory" },
-    { href: "/orders", label: "Orders", icon: ReceiptIcon, group: "Inventory" },
-    { href: "/settings", label: "Settings", icon: SettingsIcon, group: "System" },
+    { href: "/", label: "Dashboard", icon: DashboardIcon },
+    { href: "/pos", label: "Point of Sale", icon: CartIcon },
+    { href: "/products", label: "Products", icon: BoxIcon },
+    { href: "/categories", label: "Categories", icon: TagIcon },
+    { href: "/suppliers", label: "Suppliers", icon: TruckIcon },
+    { href: "/customers", label: "Customers", icon: PersonIcon },
+    { href: "/receive-stock", label: "Receive Stock", icon: ReceiveIcon },
+    { href: "/transfers", label: "Transfers", icon: SwapIcon },
+    { href: "/stock", label: "Stock Management", icon: StackIcon },
+    { href: "/orders", label: "Orders", icon: ReceiptIcon },
+    { href: "/reports", label: "Reports", icon: ReportIcon },
 ] as const;
 
 export function isActive(pathname: string, href: string) {
     return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
-export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function Sidebar({
+    open,
+    onClose,
+    storeName,
+    onLogout,
+}: {
+    open: boolean;
+    onClose: () => void;
+    storeName: string;
+    onLogout: () => void;
+}) {
     const pathname = usePathname();
-
-    const groups = NAV_ITEMS.reduce<Record<string, typeof NAV_ITEMS[number][]>>((acc, item) => {
-        acc[item.group] = acc[item.group] || [];
-        acc[item.group].push(item);
-        return acc;
-    }, {});
 
     return (
         <>
-            {/* Scrim shown while the drawer is open on small screens */}
             <div
                 onClick={onClose}
                 aria-hidden="true"
-                className={`fixed inset-0 z-30 bg-nav/50 backdrop-blur-[2px] transition-opacity lg:hidden ${
+                className={`no-print fixed inset-0 z-30 bg-nav-deep/60 backdrop-blur-[2px] transition-opacity lg:hidden ${
                     open ? "opacity-100" : "pointer-events-none opacity-0"
                 }`}
             />
 
             <aside
-                className={`no-print fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-nav text-nav-text transition-transform duration-200 lg:translate-x-0 ${
+                className={`no-print fixed inset-y-0 left-0 z-40 flex w-60 flex-col bg-nav transition-transform duration-200 lg:translate-x-0 ${
                     open ? "translate-x-0" : "-translate-x-full"
                 }`}
             >
-                <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-white/10 px-5">
-                    <Link href="/" onClick={onClose} className="flex items-center gap-2.5">
-                        <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-white">
-                            <StoreIcon width={18} height={18} />
+                <div className="flex h-14 shrink-0 items-center justify-between gap-2 bg-nav-deep/60 px-4">
+                    <Link href="/" onClick={onClose} className="flex min-w-0 items-center gap-2.5">
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary text-white">
+                            <StoreIcon width={16} height={16} />
                         </span>
-                        <span className="leading-tight">
-                            <span className="block text-sm font-semibold text-white">POS System</span>
-                            <span className="block text-[11px] text-nav-text/70">Main Store</span>
+                        <span className="truncate text-[13px] font-bold tracking-wide text-white uppercase">
+                            {storeName}
                         </span>
                     </Link>
                     <button
                         type="button"
                         onClick={onClose}
                         aria-label="Close navigation"
-                        className="rounded-lg p-1.5 text-nav-text hover:bg-white/10 hover:text-white lg:hidden"
+                        className="rounded-md p-1.5 text-nav-text hover:bg-white/10 hover:text-white lg:hidden"
                     >
-                        <CloseIcon width={18} height={18} />
+                        <CloseIcon width={16} height={16} />
                     </button>
                 </div>
 
-                <nav className="scroll-thin flex-1 overflow-y-auto px-3 py-4">
-                    {Object.entries(groups).map(([group, items]) => (
-                        <div key={group} className="mb-5 last:mb-0">
-                            <p className="px-3 pb-2 text-[10px] font-semibold tracking-[0.14em] text-nav-text/50 uppercase">
-                                {group}
-                            </p>
-                            <ul className="space-y-1">
-                                {items.map(({ href, label, icon: Icon }) => {
-                                    const active = isActive(pathname, href);
-                                    return (
-                                        <li key={href}>
-                                            <Link
-                                                href={href}
-                                                onClick={onClose}
-                                                aria-current={active ? "page" : undefined}
-                                                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                                                    active
-                                                        ? "bg-primary font-medium text-white"
-                                                        : "text-nav-text hover:bg-nav-soft hover:text-white"
-                                                }`}
-                                            >
-                                                <Icon width={18} height={18} />
-                                                {label}
-                                            </Link>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        </div>
-                    ))}
+                <nav className="scroll-thin-nav flex-1 overflow-y-auto px-2.5 py-3">
+                    <ul className="space-y-1">
+                        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+                            const active = isActive(pathname, href);
+                            return (
+                                <li key={href}>
+                                    <Link
+                                        href={href}
+                                        onClick={onClose}
+                                        aria-current={active ? "page" : undefined}
+                                        className={`flex items-center gap-3 rounded-md px-3 py-2 text-[13px] transition-colors ${
+                                            active
+                                                ? "bg-nav-soft font-medium text-white shadow-[inset_3px_0_0_0_var(--color-primary)]"
+                                                : "text-nav-text hover:bg-white/5 hover:text-white"
+                                        }`}
+                                    >
+                                        <Icon width={17} height={17} className="shrink-0" />
+                                        {label}
+                                    </Link>
+                                </li>
+                            );
+                        })}
+                    </ul>
                 </nav>
 
-                <div className="shrink-0 border-t border-white/10 px-5 py-4 text-[11px] text-nav-text/60">
-                    <p className="font-medium text-nav-text/80">Signed in as Cashier</p>
-                    <p>v0.1.0 · Main Store</p>
+                <div className="shrink-0 space-y-2 border-t border-white/10 px-3 py-3">
+                    <LicenseChip />
+                    <div className="flex items-center gap-2.5 px-1">
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/10 text-nav-text">
+                            <PersonIcon width={15} height={15} />
+                        </span>
+                        <span className="truncate text-[13px] text-nav-text">System Administrator</span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onLogout}
+                        className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] text-danger hover:bg-white/5"
+                    >
+                        <LogoutIcon width={16} height={16} />
+                        Logout
+                    </button>
                 </div>
             </aside>
         </>

@@ -228,3 +228,124 @@ export function LogoutIcon(props: IconProps) {
         </Svg>
     );
 }
+
+export function KeyIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <circle cx="8" cy="15.5" r="4.2" />
+            <path d="m11.2 12.4 8.6-8.6M16.5 7.2l2.6 2.6M13.7 10l2 2" />
+        </Svg>
+    );
+}
+
+export function BagIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <path d="M5.5 8h13l-.9 11.1a1.8 1.8 0 0 1-1.8 1.65H8.2a1.8 1.8 0 0 1-1.8-1.65L5.5 8Z" />
+            <path d="M9 10.5V6.8a3 3 0 0 1 6 0v3.7" />
+        </Svg>
+    );
+}
+
+export function ChartLineIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <path d="M3.5 4.5v14a1.5 1.5 0 0 0 1.5 1.5h15.5" />
+            <path d="m7.5 14.5 3.6-4.2 3.2 2.6 5.2-6.4" />
+        </Svg>
+    );
+}
+
+export function CalendarIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <rect x="3.5" y="5" width="17" height="15.5" rx="2" />
+            <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+            <path d="M8 13.5h3M8 17h3M13.5 13.5h3" />
+        </Svg>
+    );
+}
+
+export function TagIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <path d="M3.5 10.5v-6a1 1 0 0 1 1-1h6L20.7 13.7a1.6 1.6 0 0 1 0 2.3l-4.7 4.7a1.6 1.6 0 0 1-2.3 0L3.5 10.5Z" />
+            <circle cx="8.2" cy="8.2" r="1.3" />
+        </Svg>
+    );
+}
+
+export function TruckIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <path d="M2.5 5.5h11.5v11H2.5zM14 9.5h4l3 3.5v3.5h-7" />
+            <circle cx="6.5" cy="17.5" r="1.8" />
+            <circle cx="17" cy="17.5" r="1.8" />
+        </Svg>
+    );
+}
+
+export function PersonIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <rect x="4" y="3.5" width="16" height="17" rx="2.2" />
+            <circle cx="12" cy="9.5" r="2.6" />
+            <path d="M7.5 17a4.5 4.5 0 0 1 9 0" />
+        </Svg>
+    );
+}
+
+export function ReceiveIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <path d="M12 3.5v10M8 10l4 4 4-4" />
+            <path d="M4 15.5v3A2.5 2.5 0 0 0 6.5 21h11a2.5 2.5 0 0 0 2.5-2.5v-3" />
+        </Svg>
+    );
+}
+
+export function SwapIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <path d="M4 8h13M14 4.5 17.5 8 14 11.5" />
+            <path d="M20 16H7M10 12.5 6.5 16l3.5 3.5" />
+        </Svg>
+    );
+}
+
+export function StackIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <path d="M4 8.5 12 4l8 4.5-8 4.5-8-4.5Z" />
+            <path d="M4 12.5v3L12 20l8-4.5v-3" />
+        </Svg>
+    );
+}
+
+export function ReportIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <path d="M5 3.5h9.5L19 8v12.5H5z" />
+            <path d="M14.5 3.5V8H19" />
+            <path d="M8.5 16.5v-3M12 16.5v-5.5M15.5 16.5v-2" />
+        </Svg>
+    );
+}
+
+export function ClockIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <circle cx="12" cy="12" r="8.5" />
+            <path d="M12 7.5V12l3 2" />
+        </Svg>
+    );
+}
+
+export function GearIcon(props: IconProps) {
+    return (
+        <Svg {...props}>
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M18.5 5.5l-2.1 2.1M7.6 16.4l-2.1 2.1" />
+        </Svg>
+    );
+}
